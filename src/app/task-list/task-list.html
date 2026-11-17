@@ -1,6 +1,6 @@
-<app-task-form (added)="add($event)" />
+<app-task-form (added)="store.add($event)" />
 
-<app-task-stats [tasks]="tasks()" />
+<app-task-stats [tasks]="store.tasks()" />
 
 <div>
   <button (click)="filter.set('all')">All</button>
@@ -9,7 +9,7 @@
 </div>
 
 @let count = visibleTasks().length;
-<p>Showing {{ count }} of {{ tasks().length }} tasks ({{ filter() }})</p>
+<p>Showing {{ count }} of {{ store.tasks().length }} tasks ({{ filter() }})</p>
 
 <ul>
   @for (task of visibleTasks(); track task.id; let i = $index) {
@@ -17,8 +17,8 @@
       <app-task-card
         [task]="task"
         [index]="i + 1"
-        (toggled)="toggle($event)"
-        (removed)="remove($event)">
+        (toggled)="store.toggle($event)"
+        (removed)="store.remove($event)">
         <span [class.high]="task.priority === 'high'">[{{ task.priority | priorityLabel }}]</span>
       </app-task-card>
     </li>
