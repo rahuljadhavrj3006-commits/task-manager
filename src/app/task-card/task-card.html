@@ -1,0 +1,7 @@
+<span [class.done]="task().done">
+  {{ index() }}. {{ task().title | titlecase }}
+  <ng-content />
+  due {{ task().dueDate | date:'mediumDate' }}
+</span>
+<button (click)="toggled.emit(task().id)">{{ task().done ? 'Reopen' : 'Done' }}</button>
+<button (click)="removed.emit(task().id)">Delete</button>

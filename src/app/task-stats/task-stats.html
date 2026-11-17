@@ -1,0 +1,8 @@
+<p>
+  Total: {{ total() }} | Open: {{ openCount() }} | Done: {{ doneCount() }} ({{ percentDone() }}%)
+  @if (urgentCount() > 0) {
+    | <strong>High priority open: {{ urgentCount() }}</strong>
+  }
+</p>
+<progress [value]="percentDone()" max="100"></progress>
+<p>Clock: {{ clock() }}</p>

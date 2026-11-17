@@ -1,0 +1,28 @@
+<app-task-form (added)="add($event)" />
+
+<app-task-stats [tasks]="tasks()" />
+
+<div>
+  <button (click)="filter.set('all')">All</button>
+  <button (click)="filter.set('open')">Open</button>
+  <button (click)="filter.set('done')">Done</button>
+</div>
+
+@let count = visibleTasks().length;
+<p>Showing {{ count }} of {{ tasks().length }} tasks ({{ filter() }})</p>
+
+<ul>
+  @for (task of visibleTasks(); track task.id; let i = $index) {
+    <li appHighlight highlightColor="lightblue">
+      <app-task-card
+        [task]="task"
+        [index]="i + 1"
+        (toggled)="toggle($event)"
+        (removed)="remove($event)">
+        <span [class.high]="task.priority === 'high'">[{{ task.priority | priorityLabel }}]</span>
+      </app-task-card>
+    </li>
+  } @empty {
+    <li>No tasks in this view</li>
+  }
+</ul>
