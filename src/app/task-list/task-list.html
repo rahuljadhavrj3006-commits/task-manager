@@ -3,6 +3,16 @@
 <app-task-stats [tasks]="store.tasks()" />
 
 <div>
+  <input #searchBox type="search" placeholder="Search tasks" (input)="onSearch(searchBox.value)" />
+  @if (searching()) {
+    <span> Searching...</span>
+  }
+  @if (searchError()) {
+    <span class="error">{{ searchError() }}</span>
+  }
+</div>
+
+<div>
   <button (click)="filter.set('all')">All</button>
   <button (click)="filter.set('open')">Open</button>
   <button (click)="filter.set('done')">Done</button>

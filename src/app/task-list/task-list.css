@@ -1,2 +1,3 @@
 li { padding: 4px; }
 .high { font-weight: bold; }
+.error { color: red; margin-left: 8px; }
