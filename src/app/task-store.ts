@@ -1,75 +1,80 @@
-import { Service ,Injectable, InjectionToken, computed, effect, inject, signal } from '@angular/core';
-import { Observable,delay,of,tap,throwError } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, finalize, map } from 'rxjs';
 import { Task } from './task';
-
-export const TASK_STORAGE_KEY = new InjectionToken<string>('TASK_STORAGE_KEY',{ 
-  providedIn: 'root',
-   factory: () => 'task-manager-tasks' 
-  });
-
-const SAMPLE_TASKS: Task[] = [
-  { id: 1, title: 'revise components', done: false, priority: 'high', dueDate: '2026-11-12' },
-  { id: 2, title: 'learn control flow', done: true, priority: 'medium', dueDate: '2026-11-13' },
-  { id: 3, title: 'build task list', done: false, priority: 'low', dueDate: '2026-11-15' }
-];
+import { TaskApi } from './task-api';
 
 @Injectable({ providedIn: 'root' })
 export class TaskStore {
-  private readonly storageKey = inject(TASK_STORAGE_KEY);
-  private readonly _tasks = signal<Task[]>(this.load());
+  private readonly api = inject(TaskApi);
+
+  private readonly _tasks = signal<Task[]>([]);
+  private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
 
   readonly tasks = this._tasks.asReadonly();
+  readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
+
   readonly total = computed(() => this._tasks().length);
   readonly doneCount = computed(() => this._tasks().filter(t => t.done).length);
   readonly openCount = computed(() => this.total() - this.doneCount());
 
   constructor() {
-    // console.log('TaskStore created');
-    effect(() => {
-      localStorage.setItem(this.storageKey, JSON.stringify(this._tasks()));
-    });
+    this.load();
+  }
+
+  load() {
+    this._loading.set(true);
+    this._error.set(null);
+    this.api.getAll()
+      .pipe(finalize(() => this._loading.set(false)))
+      .subscribe({
+        next: tasks => this._tasks.set(tasks),
+        error: (err: Error) => this._error.set(err.message)
+      });
   }
 
   add(title: string) {
-    const nextId = Math.max(0, ...this._tasks().map(t => t.id)) + 1;
     const today = new Date().toISOString().slice(0, 10);
-    this._tasks.update(list => [
-      ...list,
-      { id: nextId, title, done: false, priority: 'medium', dueDate: today }
-    ]);
+    this.api.create({ title, done: false, priority: 'medium', dueDate: today }).subscribe({
+      next: created => this._tasks.update(list => [...list, created]),
+      error: (err: Error) => this._error.set(err.message)
+    });
   }
 
-  toggle(id: number) {
+  toggle(id: string) {
+    const before = this._tasks();
+    const task = before.find(t => t.id === id);
+    if (!task) {
+      return;
+    }
     this._tasks.update(list =>
       list.map(t => (t.id === id ? { ...t, done: !t.done } : t))
     );
+    this.api.update(id, { done: !task.done }).subscribe({
+      error: (err: Error) => {
+        this._tasks.set(before);
+        this._error.set(err.message);
+      }
+    });
   }
 
-  remove(id: number) {
+  remove(id: string) {
+    const before = this._tasks();
     this._tasks.update(list => list.filter(t => t.id !== id));
+    this.api.delete(id).subscribe({
+      error: (err: Error) => {
+        this._tasks.set(before);
+        this._error.set(err.message);
+      }
+    });
   }
 
-   search(term: string): Observable<number[]> {
-    if (term === 'fail') {
-      return throwError(() => new Error('Search server is not responding'));
-    }
-    const ids = this._tasks()
-      .filter(t => t.title.toLowerCase().includes(term))
-      .map(t => t.id);
-    const ms = 300 + Math.floor(Math.random() * 1200);
-    console.log(`request "${term}" (${ms} ms)`);
-    return of(ids).pipe(
-      delay(ms),
-      tap(() => console.log(`response "${term}"`))
-    );
+  search(term: string): Observable<string[]> {
+    return this.api.search(term).pipe(map(tasks => tasks.map(t => t.id)));
   }
 
-  private load(): Task[] {
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      return saved ? (JSON.parse(saved) as Task[]) : SAMPLE_TASKS;
-    } catch {
-      return SAMPLE_TASKS;
-    }
+  clearError() {
+    this._error.set(null);
   }
 }

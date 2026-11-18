@@ -1,4 +1,4 @@
-import { Component, computed, signal ,ChangeDetectionStrategy,inject} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 import { Highlight } from '../highlight';
@@ -8,8 +8,6 @@ import { TaskForm } from '../task-form/task-form';
 import { TaskStats } from '../task-stats/task-stats';
 import { TaskStore } from '../task-store';
 
-
-
 @Component({
   selector: 'app-task-list',
   imports: [Highlight, PriorityLabelPipe, TaskCard, TaskForm, TaskStats],
@@ -18,7 +16,6 @@ import { TaskStore } from '../task-store';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TaskList {
-
   protected readonly store = inject(TaskStore);
 
   filter = signal<'all' | 'open' | 'done'>('all');
@@ -29,16 +26,14 @@ export class TaskList {
 
   private readonly matchIds = toSignal(
     this.searchInput$.pipe(
-      tap(value => console.log('keystroke:', value)),
       map(value => value.trim().toLowerCase()),
       debounceTime(300),
       distinctUntilChanged(),
       tap(term => {
-        console.log('search term:', term);
         this.searchError.set('');
         this.searching.set(term !== '');
       }),
-      switchMap((term): Observable<number[] | null> =>
+      switchMap((term): Observable<string[] | null> =>
         term === ''
           ? of(null)
           : this.store.search(term).pipe(

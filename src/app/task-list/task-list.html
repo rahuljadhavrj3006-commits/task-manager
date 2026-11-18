@@ -1,38 +1,50 @@
 <app-task-form (added)="store.add($event)" />
 
-<app-task-stats [tasks]="store.tasks()" />
+@if (store.error(); as message) {
+  <p class="error">
+    {{ message }}
+    <button (click)="store.load()">Retry</button>
+    <button (click)="store.clearError()">Dismiss</button>
+  </p>
+}
 
-<div>
-  <input #searchBox type="search" placeholder="Search tasks" (input)="onSearch(searchBox.value)" />
-  @if (searching()) {
-    <span> Searching...</span>
-  }
-  @if (searchError()) {
-    <span class="error">{{ searchError() }}</span>
-  }
-</div>
+@if (store.loading()) {
+  <p>Loading tasks...</p>
+} @else {
+  <app-task-stats [tasks]="store.tasks()" />
 
-<div>
-  <button (click)="filter.set('all')">All</button>
-  <button (click)="filter.set('open')">Open</button>
-  <button (click)="filter.set('done')">Done</button>
-</div>
+  <div>
+    <input #searchBox type="search" placeholder="Search tasks" (input)="onSearch(searchBox.value)" />
+    @if (searching()) {
+      <span> Searching...</span>
+    }
+    @if (searchError()) {
+      <span class="error">{{ searchError() }}</span>
+    }
+  </div>
 
-@let count = visibleTasks().length;
-<p>Showing {{ count }} of {{ store.tasks().length }} tasks ({{ filter() }})</p>
+  <div>
+    <button (click)="filter.set('all')">All</button>
+    <button (click)="filter.set('open')">Open</button>
+    <button (click)="filter.set('done')">Done</button>
+  </div>
 
-<ul>
-  @for (task of visibleTasks(); track task.id; let i = $index) {
-    <li appHighlight highlightColor="lightblue">
-      <app-task-card
-        [task]="task"
-        [index]="i + 1"
-        (toggled)="store.toggle($event)"
-        (removed)="store.remove($event)">
-        <span [class.high]="task.priority === 'high'">[{{ task.priority | priorityLabel }}]</span>
-      </app-task-card>
-    </li>
-  } @empty {
-    <li>No tasks in this view</li>
-  }
-</ul>
+  @let count = visibleTasks().length;
+  <p>Showing {{ count }} of {{ store.total() }} tasks ({{ filter() }})</p>
+
+  <ul>
+    @for (task of visibleTasks(); track task.id; let i = $index) {
+      <li appHighlight highlightColor="lightblue">
+        <app-task-card
+          [task]="task"
+          [index]="i + 1"
+          (toggled)="store.toggle($event)"
+          (removed)="store.remove($event)">
+          <span [class.high]="task.priority === 'high'">[{{ task.priority | priorityLabel }}]</span>
+        </app-task-card>
+      </li>
+    } @empty {
+      <li>No tasks in this view</li>
+    }
+  </ul>
+}

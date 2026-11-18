@@ -13,6 +13,6 @@ export class TaskCard {
   task = input.required<Task>();
   index = input(0);
 
-  toggled = output<number>();
-  removed = output<number>();
+  toggled = output<string>();
+  removed = output<string>();
 }
